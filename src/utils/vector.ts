@@ -1,8 +1,15 @@
-import point from "@/utils/point.ts";
+import Point from './point';
 
-export default class Vector{
-    constructor(begin, end) {
-        this.begin = begin
-        this.end = end
+export default class Vector {
+    x: number;
+    y: number;
+
+    constructor(x: number, y: number) {
+      this.x = x;
+      this.y = y;
+    }
+
+    crossProduct(vec: Vector): number {
+        return this.x * vec.y - this.y * vec.x;
     }
 }
