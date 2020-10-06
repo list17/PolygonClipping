@@ -24,18 +24,17 @@ export default class Segment {
             return false;
         } else {
             if (this.isStraddle(seg) && seg.isStraddle(this)) {
-                console.log(this.getIntersect(seg).x, this.getIntersect(seg).y)
                 return true;
             }
         }
         return false;
     }
 
-    getIntersect(seg: Segment, index ?: number): Point {
+    getIntersect(seg: Segment): Point {
         let C1 = this.end.x * this.begin.y - this.begin.x * this.end.y;
         let C2 = seg.end.x * seg.begin.y - seg.begin.x * seg.end.y;
-        return new Point((C2 * this.vector.x - C1 * seg.vector.x) / (seg.vector.x * this.vector.y - this.vector.x * seg.vector.y),
-            (C1 * seg.vector.y - C2 * this.vector.y) / (this.vector.x * seg.vector.y - seg.vector.x * this.vector.y),
-            index ? index : 0)
+        return new Point(
+            Math.ceil((C2 * this.vector.x - C1 * seg.vector.x) / (seg.vector.x * this.vector.y - this.vector.x * seg.vector.y)),
+            Math.ceil((C1 * seg.vector.y - C2 * this.vector.y) / (this.vector.x * seg.vector.y - seg.vector.x * this.vector.y)));
     }
 }
