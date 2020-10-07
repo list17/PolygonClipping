@@ -3,8 +3,8 @@ export default class Vector {
     y: number;
 
     constructor(x: number, y: number) {
-      this.x = x;
-      this.y = y;
+        this.x = x;
+        this.y = y;
     }
 
     crossProduct(vec: Vector): number {

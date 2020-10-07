@@ -52,12 +52,29 @@ export default class Polygon {
         return false;
     }
 
-    close(): void {
+    close(): boolean {
         if (this.pointSet[this.pointSet.length - 1].length >= 3) {
             let seg = new Segment(this.pointSet[this.pointSet.length - 1][this.pointSet[this.pointSet.length - 1].length - 1], this.pointSet[this.pointSet.length - 1][0]);
+
+            for (let i = 0; i < this.segmentSet.length; i++) {
+                if (this.pointSet[this.pointSet.length - 1].length > 0) {
+                    if (seg.isCross(this.segmentSet[i])) {
+                        return false;
+                    }
+                }
+            }
+
             this.segmentSet.push(seg);
             this.pointSet.push([]);
+            return true;
         }
+        return false;
+    }
+
+    clear(): boolean {
+        this.pointSet = [[]];
+        this.segmentSet = [];
+        return true;
     }
 
     isClockwise(points: Point[]): boolean {
@@ -71,7 +88,20 @@ export default class Polygon {
         return (area < 0);
     }
 
-    clip(polygon: Polygon): Point[][] {
+    addLoop(points: Point[]) {
+        if (this.pointSet.length !== 0) {
+            if (this.pointSet[this.pointSet.length - 1].length === 0) {
+                this.pointSet.pop();
+            }
+        }
+        this.pointSet.push(points)
+        if (points.length > 0)
+            for (let i = 0; i < points.length; i++) {
+                this.segmentSet.push(new Segment(points[i], points[i === points.length - 1 ? 0 : i + 1]))
+            }
+    }
+
+    clip(polygon: Polygon): Polygon[] {
         let mainTableOrigin: LinkNode[] = this.initTable();
         let cutTableOrigin: LinkNode[] = polygon.initTable();
         let mainTable: LinkNode[] = [];
@@ -80,24 +110,67 @@ export default class Polygon {
 
         if (mainTable.length === mainTableOrigin.length) {
             if (this.getArea() >= polygon.getArea()) {
-                return polygon.pointSet;
+                return [polygon];
             } else {
-                let result: Point[][] = [];
-                result.push(this.pointSet[0]);
+                let result: Polygon[] = [new Polygon()];
+                for (let i = 0; i < this.pointSet.length; i++) {
+                    result[0].addLoop(this.pointSet[i])
+                }
                 for (let i = 1; i < polygon.pointSet.length; ++i) {
                     if (polygon.pointSet[i].length === 0) {
                         continue;
                     }
                     if (polygon.pointSet[i][0].isPointInPolygon(this.pointSet)) {
-                        result.push(polygon.pointSet[i]);
+                        result[0].addLoop(polygon.pointSet[i]);
                     }
                 }
                 return result;
             }
         }
 
-        let result: Point[][] = [];
+        let noCrossLoop: Point[][] = [];
+        for (let i = 1; i < this.pointSet.length; i++) {
+            let flag = false;
+            for (let j = 0; j < this.pointSet[i].length; j++) {
+                let segTemp = new Segment(this.pointSet[i][j], this.pointSet[i][j === this.pointSet[i].length - 1 ? 0 : j + 1]);
+                for (let k = 0; k < polygon.segmentSet.length; k++) {
+                    if (segTemp.isCross(polygon.segmentSet[k])) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag) {
+                    break;
+                }
+            }
+            if (!flag) {
+                noCrossLoop.push(this.pointSet[i]);
+            }
+        }
+
+        for (let i = 1; i < polygon.pointSet.length; i++) {
+            let flag = false;
+            for (let j = 0; j < polygon.pointSet[i].length; j++) {
+                let segTemp = new Segment(polygon.pointSet[i][j], polygon.pointSet[i][j === polygon.pointSet[i].length - 1 ? 0 : j + 1]);
+                for (let k = 0; k < this.segmentSet.length; k++) {
+                    if (segTemp.isCross(this.segmentSet[k])) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag) {
+                    break;
+                }
+            }
+            if (!flag) {
+                noCrossLoop.push(polygon.pointSet[i]);
+            }
+        }
+
+
+        let result: Polygon[] = [];
         while (true) {
+            let newPolygon: Polygon = new Polygon();
             let points: Point[] = [];
             let isFound: boolean = false;
             let pNode: LinkNode | undefined = undefined;
@@ -148,7 +221,16 @@ export default class Polygon {
                     }
                 }
             }
-            result.push(points);
+            newPolygon.addLoop(points);
+            for (let i = 0; i < noCrossLoop.length; i++) {
+                if (noCrossLoop[i].length > 0) {
+                    if (noCrossLoop[i][0].isInLoop(newPolygon.pointSet[0])) {
+                        newPolygon.addLoop(noCrossLoop[i]);
+                    }
+                }
+            }
+
+            result.push(newPolygon);
         }
         return result;
     }
